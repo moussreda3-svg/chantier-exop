@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grille de sélection d'un chantier ExOp — Enedis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,600;0,700;0,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#1423DC; --blue-deep:#0E17A8; --green:#96CD32; --green-dk:#4B8B1F;
+    --ink:#1B1D2A; --muted:#5C6470; --line:#E2E4F4; --bg:#F5F6FB; --surface:#FFFFFF;
+    --ok:#4B8B1F; --ok-bg:#EEF6E1; --ok-line:#CFE4A6;
+    --warn:#B9791A; --warn-bg:#FBF1DD; --warn-line:#EBD3A0;
+    --no:#C13A2B; --no-bg:#FBE5E1; --no-line:#EEC0B7;
+    --idle:#6B7280; --idle-bg:#EEF0F7; --idle-line:#DADEEE;
+    --font:"Enedis","Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --body:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;border-top:5px solid var(--green);background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:400;line-height:1.45;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:30px 22px 64px}
+
+  /* header */
+  .brand{font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--blue);margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .brand .bolt{width:14px;height:14px;color:var(--green)}
+  h1{font-family:var(--font);font-size:27px;font-weight:800;letter-spacing:-.01em;margin:0 0 12px;color:var(--blue);position:relative;padding-bottom:9px}
+  h1::after{content:"";position:absolute;left:0;bottom:0;width:54px;height:4px;border-radius:2px;background:var(--green)}
+  .lede{font-size:14.5px;color:var(--muted);margin:0;max-width:64ch}
+
+  /* meta */
+  .meta{display:grid;grid-template-columns:1.6fr 1fr 1.2fr;gap:10px;margin:20px 0 4px}
+  .f{display:flex;flex-direction:column;gap:5px}
+  .f label{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+  .f input{font:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:9px 11px}
+  .f input:focus{outline:2px solid var(--blue);outline-offset:1px;border-color:var(--blue)}
+
+  /* verdict */
+  .verdict{margin:18px 0 10px;border:1px solid var(--idle-line);background:var(--idle-bg);border-radius:var(--radius);padding:15px 18px;transition:background .3s,border-color .3s}
+  .verdict[data-state="ok"]{background:var(--ok-bg);border-color:var(--ok-line)}
+  .verdict[data-state="warn"]{background:var(--warn-bg);border-color:var(--warn-line)}
+  .verdict[data-state="no"]{background:var(--no-bg);border-color:var(--no-line)}
+  .vtop{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+  .dot{width:12px;height:12px;border-radius:50%;background:var(--idle);flex:0 0 auto}
+  .verdict[data-state="ok"] .dot{background:var(--green)}
+  .verdict[data-state="warn"] .dot{background:var(--warn)}
+  .verdict[data-state="no"] .dot{background:var(--no)}
+  .vlabel{font-family:var(--font);font-size:18px;font-weight:800}
+  .verdict[data-state="ok"] .vlabel{color:var(--ok)}
+  .verdict[data-state="warn"] .vlabel{color:#8C590F}
+  .verdict[data-state="no"] .vlabel{color:#98281B}
+  .counters{margin-left:auto;display:flex;gap:7px}
+  .pill{font-size:11.5px;font-weight:700;background:rgba(150,205,50,.22);color:var(--green-dk);border-radius:999px;padding:4px 10px;white-space:nowrap}
+  .vmsg{margin:9px 0 0;font-size:13.5px;color:var(--ink)}
+  .vmsg ul{margin:6px 0 0;padding-left:18px}
+  .vmsg li{margin:2px 0}
+  .vnote{margin:9px 0 0;font-size:12px;color:var(--warn);display:none;padding-top:9px;border-top:1px dashed var(--warn-line)}
+  .vnote.show{display:block}
+  .vmeta{margin:9px 0 0;font-size:12px;color:var(--muted);display:none;padding-top:9px;border-top:1px solid var(--line)}
+  .vmeta.show{display:block}
+  .vmeta b{color:var(--ink);font-weight:600}
+
+  /* blocs */
+  .legend{font-size:12.5px;color:var(--muted);margin:4px 0 22px}
+  .legend b{color:var(--ink)}
+  .bloc{margin:0 0 22px}
+  .bhead{display:flex;align-items:center;gap:10px;margin:0 0 3px}
+  .bidx{font-family:var(--font);font-size:12px;font-weight:800;color:#fff;background:var(--blue);border-radius:6px;padding:3px 9px}
+  .bhead h2{font-family:var(--font);font-size:16px;font-weight:800;margin:0}
+  .brule{font-size:12px;color:var(--muted);margin:1px 0 12px 0}
+  .brule.ko{color:var(--no);font-weight:600}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--green);border-radius:var(--radius)}
+  .row{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:13px 16px;border-top:1px solid var(--line);position:relative}
+  .row:first-child{border-top:none}
+  .row.non{background:#FDF3F1}
+  .cid{font-size:11.5px;font-weight:800;color:var(--blue-deep);background:#E9EBFC;border-radius:7px;height:28px;display:flex;align-items:center;justify-content:center}
+  .cq{font-size:14px;margin:0}
+  .cq b{font-weight:700}
+  .info{display:inline-flex;align-items:center;vertical-align:middle;margin-left:5px;cursor:help;color:var(--blue)}
+  .info svg{width:15px;height:15px}
+  .info:hover,.info:focus{color:var(--blue-deep);outline:none}
+  .tip{position:absolute;left:14px;top:calc(100% - 3px);width:min(360px,calc(100% - 28px));
+    background:var(--ink);color:#fff;font-weight:400;font-size:12.5px;line-height:1.45;
+    padding:10px 13px;border-radius:9px;box-shadow:0 10px 26px rgba(20,29,42,.22);
+    opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .14s,transform .14s;
+    z-index:30;pointer-events:none;text-align:left}
+  .info:hover .tip,.info:focus .tip,.info:focus-within .tip{opacity:1;visibility:visible;transform:translateY(0)}
+
+  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;flex:0 0 auto}
+  .tg{font:inherit;font-size:13px;font-weight:700;color:var(--muted);background:var(--surface);border:none;padding:8px 16px;cursor:pointer;transition:background .12s,color .12s}
+  .tg+.tg{border-left:1px solid var(--line)}
+  .tg:hover{background:#F1F2FA}
+  .tg:focus-visible{outline:2px solid var(--blue);outline-offset:-2px;z-index:1}
+  .tg-o.on{background:var(--green);color:#22300B}
+  .tg-n.on{background:var(--no);color:#fff}
+
+  /* compléments */
+  .sub{font-size:12px;color:var(--muted);margin:1px 0 12px 0}
+  .choice{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{font:inherit;font-size:13px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 15px;cursor:pointer;transition:.12s}
+  .chip:hover{background:#F1F2FA}
+  .chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .chip:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+
+  /* actions */
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin:26px 0 18px}
+  .btn{font:inherit;font-size:14px;font-weight:700;cursor:pointer;border-radius:10px;padding:11px 19px;border:1px solid var(--blue);transition:.12s}
+  .btn-p{background:var(--blue);color:#fff}
+  .btn-p:hover{background:var(--blue-deep);border-color:var(--blue-deep)}
+  .btn-g{background:transparent;color:var(--blue);border-color:var(--line)}
+  .btn-g:hover{border-color:var(--blue);background:#EEF0FF}
+  .btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  .src{font-size:11.5px;color:#9AA0B4;border-top:1px solid var(--line);padding-top:14px;line-height:1.55}
+  .src b{color:var(--muted)}
+
+  @media (max-width:620px){
+    .wrap{padding:24px 14px 56px}
+    h1{font-size:23px}.meta{grid-template-columns:1fr}
+    .row{grid-template-columns:30px 1fr;grid-template-areas:"id body" "tg tg";row-gap:10px}
+    .cid{grid-area:id}.row>div:nth-child(2){grid-area:body}.toggle{grid-area:tg;justify-self:start}
+    .counters{margin-left:0;width:100%}
+  }
+  @media print{
+    body{background:#fff}.wrap{max-width:none;padding:0}.actions{display:none}
+    .bloc,.card,.verdict{break-inside:avoid}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="brand"><svg class="bolt" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>Enedis · Excellence Opérationnelle</p>
+  <h1>Grille de sélection d'un chantier ExOp</h1>
+  <p class="lede">Décider go / no-go pour un sujet candidat, selon la méthode de qualification ExOp.</p>
+
+  <div class="meta">
+    <div class="f"><label for="sujet">Sujet candidat</label><input id="sujet" type="text" placeholder="Ex. résorption des ETI D305 bloquées"></div>
+    <div class="f"><label for="date">Date</label><input id="date" type="date"></div>
+    <div class="f"><label for="eval">Évaluateurs</label><input id="eval" type="text" placeholder="Pôle / équipe"></div>
+  </div>
+
+  <section class="verdict" id="verdict" data-state="idle" aria-live="polite">
+    <div class="vtop">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="vlabel" id="vLabel">À compléter</span>
+      <span class="counters"><span class="pill" id="cA">A 0/3</span><span class="pill" id="cB">B 0/5</span></span>
+    </div>
+    <div class="vmsg" id="vMsg">Renseignez les critères pour obtenir un verdict.</div>
+    <div class="vnote" id="vNote"></div>
+    <div class="vmeta" id="vMeta"></div>
+  </section>
+
+  <p class="legend"><b>Règle :</b> bloc A = éliminatoire (un « Non » écarte le sujet) · bloc B = qualification (chaque « Non » est à lever avant l'inscription).</p>
+
+  <section class="bloc">
+    <div class="bhead"><span class="bidx">A</span><h2>Conditions éliminatoires</h2></div>
+    <p class="brule ko">Un « Non » suffit à ne pas inscrire le sujet.</p>
+    <div class="card" id="cardA"></div>
+  </section>
+
+  <section class="bloc">
+    <div class="bhead"><span class="bidx">B</span><h2>Conditions de qualification</h2></div>
+    <p class="brule">Chaque « Non » est un point à retravailler avant l'inscription.</p>
+    <div class="card" id="cardB"></div>
+  </section>
+
+  <section class="bloc">
+    <div class="bhead"><span class="bidx">+</span><h2>Cadrage (non bloquant)</h2></div>
+    <p class="sub">Oriente la conduite du chantier, sans conditionner l'inscription.</p>
+    <div class="card">
+      <div class="row" style="grid-template-columns:34px 1fr auto">
+        <span class="cid">C1</span>
+        <div><p class="cq"><b>Nature du chantier</b> — performance (mode projet) ou culturel (rituels, MVP). <span class="info" tabindex="0" aria-label="Plus de détails"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><circle cx="12" cy="7.6" r="1" fill="currentColor" stroke="none"></circle></svg><span class="tip">Chantier de performance = mené en mode projet pour résoudre un problème. Chantier culturel = installation des rituels et pratiques (management visuel, MVP, animation d'équipe).</span></span></p></div>
+        <div class="choice">
+          <button type="button" class="chip" data-val="perf">Performance</button>
+          <button type="button" class="chip" data-val="cult">Culturel</button>
+        </div>
+      </div>
+      <div class="row" style="grid-template-columns:34px 1fr auto">
+        <span class="cid">C2</span>
+        <div><p class="cq"><b>Prévention Santé Sécurité</b> intégrée dès le départ. <span class="info" tabindex="0" aria-label="Plus de détails"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><circle cx="12" cy="7.6" r="1" fill="currentColor" stroke="none"></circle></svg><span class="tip">La Prévention Santé Sécurité doit être intégrée dès le départ de la démarche d'amélioration — c'est un principe fondateur, pas une vérification de dernière minute.</span></span></p></div>
+        <div class="toggle" role="group" aria-label="Prévention : Oui ou Non">
+          <button type="button" class="tg tg-o" data-crit="C2" data-val="oui">Oui</button>
+          <button type="button" class="tg tg-n" data-crit="C2" data-val="non">Non</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button type="button" class="btn btn-p" id="printBtn">Imprimer / PDF</button>
+    <button type="button" class="btn btn-g" id="resetBtn">Réinitialiser</button>
+  </div>
+
+  <p class="src"><b>Méthode.</b> Critères issus de la démarche ExOp : vrai problème vs symptôme, axes de performance, périmètre maîtrisé (bloc A) ; faits & données, cible mesurable, périmètre cadré, priorisation Pareto, posture (bloc B). Outil d'aide à la décision, à adapter au contexte.</p>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var A=[
+    {id:"A1",q:'<b>Vrai problème</b> = écart de performance (ni symptôme, ni conséquence, ni manque de moyens).',d:"Un problème ExOp est un écart de performance : ce qui empêche une équipe ou un processus d'être performant. À ne pas confondre avec un symptôme (signe visible), une conséquence (effet), ou un manque de moyens — souvent remonté à tort comme un problème."},
+    {id:"A2",q:'Touche au moins un <b>axe de performance</b> (client Q/C/D · rentabilité-pérennité · PSS · QVT).',d:"La performance se mesure sur 4 axes simultanés : satisfaction client (Qualité, Coût, Délai), rentabilité et pérennité du processus, Prévention Santé Sécurité, et Qualité de Vie au Travail. Le sujet doit toucher au moins l'un d'eux."},
+    {id:"A3",q:'<b>Périmètre maîtrisé</b> par l\'équipe, avec des leviers d\'action.',d:"Le sujet doit relever du périmètre d'action de l'équipe, avec de vrais leviers pour agir. Un sujet hors périmètre est à réorienter vers les personnes compétentes plutôt qu'à inscrire comme chantier de l'équipe."}
+  ];
+  var B=[
+    {id:"B1",q:'Écart <b>documenté par des faits / données</b> (situation chiffrée).',d:"L'écart doit être révélé par des faits et des données chiffrées (situation actuelle mesurée), et non par du ressenti ou une impression."},
+    {id:"B2",q:'<b>Cible mesurable</b> définie — « c\'est gagné si… ».',d:"On doit pouvoir définir l'état visé de façon mesurable — « c'est gagné si… » — pour savoir précisément quand le problème sera résolu."},
+    {id:"B3",q:'<b>Périmètre cadré</b> : qui est concerné, qui impliquer, où.',d:"Préciser qui est concerné, qui subit le problème, qui impliquer, et quelles zones géographiques ou organisationnelles entrent dans le périmètre."},
+    {id:"B4",q:'<b>Priorisé avec l\'équipe</b> (impact suffisant, logique Pareto).',d:"On ne peut pas tout traiter en même temps : prioriser avec l'équipe selon l'impact (logique Pareto — concentrer l'effort sur les sujets à plus fort effet)."},
+    {id:"B5",q:'<b>Bonne posture</b> des porteurs face au problème (≥ 7 sur l\'échelle).',d:"Les porteurs doivent adopter la bonne posture face au problème (« au-dessus de 7 sur l'échelle ») : prêts à l'affronter avec méthode plutôt qu'à le subir ou le nier."}
+  ];
+  var BSHORT={B1:"documenter l'écart (faits/données)",B2:"définir la cible mesurable",B3:"cadrer le périmètre",B4:"prioriser (Pareto)",B5:"sécuriser la posture (≥ 7)"};
+  var AREASON={
+    A1:"A1 — Ce n'est pas un vrai problème (symptôme, conséquence ou manque de moyens). À reformuler.",
+    A2:"A2 — Hors des axes de performance : ne constitue pas un chantier ExOp.",
+    A3:"A3 — Hors du périmètre maîtrisé. À réorienter vers les personnes compétentes."
+  };
+  var state={}, nature=null;
+
+  function ico(d){return '<span class="info" tabindex="0" aria-label="Plus de détails"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><circle cx="12" cy="7.6" r="1" fill="currentColor" stroke="none"></circle></svg><span class="tip">'+d+'</span></span>';}
+  function rowHTML(c){
+    return '<div class="row" data-row="'+c.id+'"><span class="cid">'+c.id+'</span>'+
+      '<div><p class="cq">'+c.q+' '+ico(c.d)+'</p></div>'+
+      '<div class="toggle" role="group" aria-label="'+c.id+'"><button type="button" class="tg tg-o" data-crit="'+c.id+'" data-val="oui" aria-pressed="false">Oui</button>'+
+      '<button type="button" class="tg tg-n" data-crit="'+c.id+'" data-val="non" aria-pressed="false">Non</button></div></div>';
+  }
+  document.getElementById("cardA").innerHTML=A.map(rowHTML).join("");
+  document.getElementById("cardB").innerHTML=B.map(rowHTML).join("");
+
+  document.querySelectorAll(".tg").forEach(function(b){
+    b.addEventListener("click",function(){
+      var c=b.getAttribute("data-crit"), v=b.getAttribute("data-val");
+      if(state[c]===v) delete state[c]; else state[c]=v;
+      sync(c); compute();
+    });
+  });
+  function sync(c){
+    document.querySelectorAll('.tg[data-crit="'+c+'"]').forEach(function(b){
+      var on=state[c]===b.getAttribute("data-val");
+      b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false");
+    });
+    var r=document.querySelector('.row[data-row="'+c+'"]');
+    if(r) r.classList.toggle("non",state[c]==="non");
+  }
+  document.querySelectorAll('.chip[data-val]').forEach(function(ch){
+    ch.addEventListener("click",function(){
+      var v=ch.getAttribute("data-val"); nature=(nature===v)?null:v;
+      document.querySelectorAll('.chip[data-val]').forEach(function(c){c.classList.toggle("on",nature===c.getAttribute("data-val"));});
+    });
+  });
+
+  function compute(){
+    var ids=function(a){return a.map(function(c){return c.id;});};
+    var aa=ids(A), bb=ids(B);
+    var aOui=aa.filter(function(i){return state[i]==="oui";}), aNon=aa.filter(function(i){return state[i]==="non";}), aAns=aa.filter(function(i){return state[i];});
+    var bOui=bb.filter(function(i){return state[i]==="oui";}), bNon=bb.filter(function(i){return state[i]==="non";}), bAns=bb.filter(function(i){return state[i];});
+    document.getElementById("cA").textContent="A "+aOui.length+"/3";
+    document.getElementById("cB").textContent="B "+bOui.length+"/5";
+    var v=document.getElementById("verdict"), lab=document.getElementById("vLabel"), msg=document.getElementById("vMsg");
+    var st,l,h;
+    if(aNon.length){st="no";l="Ne pas inscrire en l'état";h="Condition éliminatoire non remplie :<ul>"+aNon.map(function(i){return "<li>"+AREASON[i]+"</li>";}).join("")+"</ul>";}
+    else if(aAns.length<3){st="idle";l="À compléter";h="Renseignez les "+(3-aAns.length)+" critère(s) restant(s) du bloc A.";}
+    else if(bNon.length){st="warn";l="À qualifier avant inscription";h="À retravailler avant l'inscription :<ul>"+bNon.map(function(i){return "<li>"+BSHORT[i]+"</li>";}).join("")+"</ul>";}
+    else if(bAns.length<5){st="idle";l="À compléter";h="Bloc A validé. Renseignez les "+(5-bAns.length)+" critère(s) restant(s) du bloc B.";}
+    else{st="ok";l="Sujet éligible";h="Toutes les conditions sont remplies. À prioriser dans le portefeuille des chantiers"+(nature?" — chantier <b>"+(nature==="perf"?"de performance (mode projet)":"culturel")+"</b>.":".");}
+    v.setAttribute("data-state",st); lab.textContent=l; msg.innerHTML=h;
+    var note=document.getElementById("vNote");
+    if(state.C2==="non"){note.classList.add("show");note.textContent="Rappel : intégrer la Prévention Santé Sécurité dès le départ (principe fondateur).";}
+    else{note.classList.remove("show");note.textContent="";}
+  }
+
+  function esc(t){return t.replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function fmtDate(v){if(!v)return "";var p=v.split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:v;}
+  function updateMeta(){
+    var s=document.getElementById("sujet").value.trim();
+    var e=document.getElementById("eval").value.trim();
+    var d=fmtDate(document.getElementById("date").value);
+    var parts=[];
+    if(s)parts.push('Sujet : <b>'+esc(s)+'</b>');
+    if(e)parts.push('Évaluateur(s) : <b>'+esc(e)+'</b>');
+    if(d)parts.push('<b>'+d+'</b>');
+    var m=document.getElementById("vMeta");
+    if(s||e){m.innerHTML=parts.join('&nbsp; · &nbsp;');m.classList.add("show");}
+    else{m.classList.remove("show");m.innerHTML="";}
+  }
+  ["sujet","date","eval"].forEach(function(id){document.getElementById(id).addEventListener("input",updateMeta);});
+  document.getElementById("resetBtn").addEventListener("click",function(){
+    state={};nature=null;
+    document.querySelectorAll(".tg,.chip").forEach(function(e){e.classList.remove("on");e.setAttribute&&e.setAttribute("aria-pressed","false");});
+    document.querySelectorAll(".row").forEach(function(r){r.classList.remove("non");});
+    ["sujet","eval"].forEach(function(i){document.getElementById(i).value="";});
+    today(); updateMeta(); compute();
+  });
+  document.getElementById("printBtn").addEventListener("click",function(){window.print();});
+  function today(){var d=new Date(),p=function(n){return(n<10?"0":"")+n;};document.getElementById("date").value=d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());}
+  today(); updateMeta(); compute();
+})();
+</script>
+</body>
+</html>
